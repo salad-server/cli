@@ -1,8 +1,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/salad-server/cli/cmd"
 	"github.com/salad-server/cli/utils"
@@ -12,6 +14,7 @@ import (
 
 func main() {
 	err := utils.LoadUtils()
+	bad := errors.New("Invalid arguments!")
 	app := &cli.App{
 		Name:  "cli",
 		Usage: "salad-cli, small time jobs for your server!",
@@ -29,7 +32,8 @@ func main() {
 						return cmd.UpdateSetStatus(status)
 					}
 
-					return nil
+					fmt.Println("Must be a beatmapset ID or status! {pending|ranked|approved|qualified|loved}")
+					return bad
 				},
 
 				Flags: []cli.Flag{
@@ -80,10 +84,14 @@ func main() {
 				Name:  "pb",
 				Usage: "Mark a score as a personal best",
 				Action: func(ctx *cli.Context) error {
-					sid := ctx.Args().Get(0)
-					fmt.Println(sid) // TODO: Error checking here. Will need to make sure score exists anyway...
+					id, err := strconv.Atoi(ctx.Args().Get(0))
 
-					return nil
+					if err != nil {
+						fmt.Println("Invalid score ID!", err)
+						return bad
+					}
+
+					return cmd.PersonalBest(id)
 				},
 			},
 		},
