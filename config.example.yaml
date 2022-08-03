@@ -1,0 +1,11 @@
+# MySQL DSN
+DSN: "<user>:<password>@localhost:3306/<db>"
+
+# API key
+OSU_API: "https://osu.ppy.sh/p/api"
+
+# Backup paths
+# Directory names change based on bancho.py version. So make sure the directories in .data match!
+PATH_REPLAYS: "/path/to/bancho.py/.data/osr"
+PATH_SCREENSHOT: "/path/to/bancho.py/.data/ss"
+PATH_AVATAR: "/path/to/bancho.py/.data/avatars"
