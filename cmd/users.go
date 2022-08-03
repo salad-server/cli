@@ -78,7 +78,7 @@ func PersonalBest(id int) error {
 	// Should check if current score is personal best
 	// but may serve as a way to remove multiple pbs.
 	if err != nil {
-		utils.Log.Error("Could not get score ", id)
+		utils.Log.Error("[PersonalBest] could not get score ", id)
 		return err
 	}
 

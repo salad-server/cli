@@ -55,8 +55,11 @@ func main() {
 				Name:  "backup",
 				Usage: "Create backup .zip including replays, user data, and SQL dump",
 				Action: func(ctx *cli.Context) error {
-					fmt.Println(ctx.Bool("sql"))
-					return nil
+					return cmd.Backup(
+						!ctx.Bool("sql"),
+						!ctx.Bool("replays"),
+						!ctx.Bool("data"),
+					)
 				},
 
 				Flags: []cli.Flag{

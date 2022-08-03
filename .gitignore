@@ -4,3 +4,7 @@ todo
 # private
 config.yaml
 cli
+
+# data
+data/*
+!data/.gitkeep
