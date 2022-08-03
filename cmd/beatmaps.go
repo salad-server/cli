@@ -12,27 +12,26 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// status on osu
-var osu = map[string]string{
-	// "-1": "notsubmitted",
-	"0": "pending",
-	"1": "ranked",
-	"2": "approved",
-	"3": "qualified",
-	"4": "loved",
-}
-
-// bancho.py status
+// Status
 var mp = map[string]string{
-	// "-1": "notsubmitted",
-	"pending": "0",
-	// "updateavailable": "1",
+	// "not_submitted": "-1",
+	// "update_available": "1",
+	"pending":   "0",
 	"ranked":    "2",
 	"approved":  "3",
 	"qualified": "4",
 	"loved":     "5",
 }
 
+var mpStr = map[string]string{
+	"0": "pending",
+	"2": "ranked",
+	"3": "approved",
+	"4": "qualified",
+	"5": "loved",
+}
+
+// Get beatmap's status on osu.ppy.sh
 func getBanchoStatus(id int) structs.BanchoBeatmap {
 	var data []structs.BanchoBeatmap
 	api := fmt.Sprintf("https://old.ppy.sh/api/get_beatmaps?k=%s&b=%d", utils.Config.API, id)
@@ -42,6 +41,7 @@ func getBanchoStatus(id int) structs.BanchoBeatmap {
 		utils.Log.Fatal("[getBanchoStatus] could not get ", id, err)
 	}
 
+	// TODO: Allow for multiple API keys
 	defer req.Body.Close()
 
 	if err := json.NewDecoder(req.Body).Decode(&data); err != nil {
@@ -51,6 +51,7 @@ func getBanchoStatus(id int) structs.BanchoBeatmap {
 	return data[0]
 }
 
+// Update all maps in DB to pending
 func updateDups(id int) error {
 	c, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	_, err := utils.Database.ExecContext(c, "UPDATE maps SET status = 0 WHERE id = ?", id)
@@ -65,6 +66,7 @@ func updateDups(id int) error {
 	return nil
 }
 
+// Update all maps (with proper md5) to <status>
 func updateBeatmap(id int, status, md5 string) error {
 	c, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	_, err := utils.Database.ExecContext(c, "UPDATE maps SET status = ? WHERE md5 = ? AND id = ?", status, md5, id)
@@ -79,37 +81,55 @@ func updateBeatmap(id int, status, md5 string) error {
 	return nil
 }
 
-func updateDatabase(bmap structs.DBeatmap) {
-	banchoStatus := getBanchoStatus(bmap.ID)
-	saladStatus := bmap.Status
-	mpStr := map[string]string{
-		"0": "pending",
-		"2": "ranked",
-		"3": "approved",
-		"4": "qualified",
-		"5": "loved",
+// Convert osu.ppy.sh status to bancho.py status
+// https://github.com/osuAkatsuki/bancho.py/blob/master/app/objects/beatmap.py#L102
+func convertStatus(status string) string {
+	switch status {
+	// Pending
+	case "-2", "-1", "-": // Graveyard, NotSubmitted, Pending
+		return "0"
+
+	// Ranked
+	case "1":
+		return "2"
+
+	// Approved
+	case "2":
+		return "3"
+
+	// Qualified
+	case "3":
+		return "4"
+
+	// Loved
+	case "4":
+		return "5"
+
+	// what??
+	default:
+		utils.Log.Fatal("Invalid status!", status)
 	}
 
-	if !slices.Contains([]string{"0", "1", "2", "3", "4"}, banchoStatus.RankStatus) {
-		utils.Log.Warnf("osu api returned an invalid status (%s), ignoring...", banchoStatus.RankStatus)
-		return
-	}
-
-	if mp[osu[banchoStatus.RankStatus]] == saladStatus {
-		utils.Log.Warnf("%s [%s] matches status on bancho! ignoring...", bmap.Title, bmap.Version)
-		return
-	}
-
-	utils.Log.Infof(
-		"<%d> | Bancho: %s (%s) | Live: %s (%s) | updated!",
-		bmap.ID, osu[banchoStatus.RankStatus],
-		mp[osu[banchoStatus.RankStatus]], mpStr[saladStatus], saladStatus,
-	)
-
-	updateDups(bmap.ID) // sometimes qualified maps don't get removed...
-	updateBeatmap(bmap.ID, mp[osu[banchoStatus.RankStatus]], bmap.MD5)
+	return ""
 }
 
+// Update a beatmap with status from osu.ppy.sh
+func updateDatabase(bmap structs.DBeatmap) {
+	banchoStatus := getBanchoStatus(bmap.ID)
+	newStatus := convertStatus(banchoStatus.RankStatus)
+	saladStatus := bmap.Status
+
+	if saladStatus == newStatus {
+		utils.Log.Warnf("<%d> | Beatmap is already %s (%s)", bmap.ID, newStatus, mpStr[newStatus])
+		return
+	}
+
+	utils.Log.Infof("<%d> | %s [%s] | %s -> %s | %s", bmap.ID, bmap.Title, bmap.Version, saladStatus, newStatus, mpStr[newStatus])
+	updateDups(bmap.ID)
+	updateBeatmap(bmap.ID, newStatus, bmap.MD5)
+}
+
+// Fetch every map in set, run updateDatabase() on every difficulty.
 func UpdateSet(id int) error {
 	var maps []structs.DBeatmap
 	c, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -118,7 +138,7 @@ func UpdateSet(id int) error {
 		WHERE set_id = ?
 	`, id)
 
-	utils.Log.Trace("Updating set: ", id)
+	fmt.Println("Updating set: ", id)
 	defer cancel()
 
 	if err != nil {
@@ -155,20 +175,20 @@ func UpdateSet(id int) error {
 	return nil
 }
 
+// Fetch every map with <status>, run updateDatabase() on every beatmap.
 func UpdateSetStatus(status string) error {
 	var maps []structs.DBeatmap
-	dbid := mp[status]
 	c, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	rows, err := utils.Database.QueryContext(c, `
 		SELECT id, title, status, version, md5 FROM maps
 		WHERE status = ?
-	`, dbid)
+	`, mp[status])
 
-	utils.Log.Tracef("Updating maps with status %s (%s)", status, dbid)
+	fmt.Printf("Updating maps with status %s (%s)\n", status, mp[status])
 	defer cancel()
 
 	if err != nil {
-		utils.Log.Error("[UpdateSetStatus] could not query ", dbid, err)
+		utils.Log.Error("[UpdateSetStatus] could not query ", mp[status], err)
 		return err
 	}
 
