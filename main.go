@@ -16,7 +16,7 @@ func main() {
 	err := utils.LoadUtils()
 	bad := errors.New("Invalid arguments!")
 	app := &cli.App{
-		Name:  "cli",
+		Name:  "salad",
 		Usage: "salad-cli, small time jobs for your server!",
 
 		Commands: []*cli.Command{
@@ -111,7 +111,7 @@ func main() {
 					if ctx.Bool("restart") {
 						return cmd.RestartSession(!ctx.Bool("attach"))
 					}
-					
+
 					fmt.Println("Must be {start|stop|restart}")
 					return bad
 				},

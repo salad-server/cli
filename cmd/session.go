@@ -10,6 +10,7 @@ import (
 	"github.com/salad-server/cli/utils"
 )
 
+// Send keystrokes to tmux window
 func sendCommand(name, cmd string) error {
 	if err := exec.Command("bash", "-c", fmt.Sprintf(
 		`tmux send-keys -t "%s" "%s" ENTER`,
@@ -21,6 +22,7 @@ func sendCommand(name, cmd string) error {
 	return nil
 }
 
+// Send ctrl + c and exit to tmux window
 func exitGrace(name string) error {
 	if err := exec.Command("bash", "-c", fmt.Sprintf(`tmux send-keys -t "%s" C-c`, name)).Run(); err != nil {
 		return err
@@ -29,6 +31,7 @@ func exitGrace(name string) error {
 	return nil
 }
 
+// Create tmux session
 func CreateSession(attach bool) error {
 	server := new(gotmux.Server)
 	exists, err := server.HasSession(utils.Config.SessionName)
@@ -86,6 +89,7 @@ func CreateSession(attach bool) error {
 	return nil
 }
 
+// Kill tmux session
 func KillSessionSafe() error {
 	server := new(gotmux.Server)
 	exists, err := server.HasSession(utils.Config.SessionName)
@@ -117,6 +121,7 @@ func KillSessionSafe() error {
 	return nil
 }
 
+// Restart tmux session
 func RestartSession(attach bool) error {
 	server := new(gotmux.Server)
 	exists, err := server.HasSession(utils.Config.SessionName)

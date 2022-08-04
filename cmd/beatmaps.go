@@ -86,7 +86,7 @@ func updateBeatmap(id int, status, md5 string) error {
 func convertStatus(status string) string {
 	switch status {
 	// Pending
-	case "-2", "-1", "-": // Graveyard, NotSubmitted, Pending
+	case "-2", "-1", "0": // Graveyard, NotSubmitted, Pending
 		return "0"
 
 	// Ranked

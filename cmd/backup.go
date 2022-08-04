@@ -36,11 +36,14 @@ func dumpSQL(filename string) error {
 
 func exportCompress(filenames map[string]string, output string) error {
 	files, err := archiver.FilesFromDisk(nil, filenames)
-	if err != nil {
+	ex, xerr := os.Executable()
+	dataPath := filepath.Dir(ex) + "/data/"
+
+	if err != nil || xerr != nil {
 		return err
 	}
 
-	out, err := os.Create("./data/" + output + ".tar.gz")
+	out, err := os.Create(dataPath + output + ".tar.gz")
 	if err != nil {
 		return err
 	}
@@ -56,7 +59,7 @@ func exportCompress(filenames map[string]string, output string) error {
 		return err
 	}
 
-	fmt.Printf("Success! Check data folder for %s.tar.gz\n", output)
+	fmt.Printf("Success! Check data (%s) directory for %s.tar.gz\n", dataPath, output)
 	return nil
 }
 
@@ -65,14 +68,20 @@ func Backup(sql, replays, data bool) error {
 	var wg sync.WaitGroup
 	var filename = time.Now().Format("2006-01-02")
 
+	ex, err := os.Executable()
+	dataPath := filepath.Dir(ex) + "/data/"
 	archive := make(map[string]string)
+
+	if err != nil {
+		utils.Log.Fatal("[Backup] could not resolve absolute path", err)
+	}
 
 	if sql {
 		utils.Log.Info("Dumping SQL...")
 		wg.Add(1)
 
 		go (func() {
-			outname, err := filepath.Abs("./data/" + filename + ".sql")
+			outname, err := filepath.Abs(dataPath + filename + ".sql")
 
 			defer wg.Done()
 			if err != nil {
@@ -100,7 +109,7 @@ func Backup(sql, replays, data bool) error {
 	compressed := exportCompress(archive, filename)
 
 	if sql {
-		if err := os.Remove("./data/" + filename + ".sql"); err != nil {
+		if err := os.Remove(dataPath + filename + ".sql"); err != nil {
 			utils.Log.Error("[Backup] could not remove SQL dump", err)
 		}
 	}

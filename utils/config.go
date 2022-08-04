@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	logrus "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
@@ -22,10 +23,11 @@ type cfg struct {
 }
 
 func loadConfig() cfg {
-	conf, err := ioutil.ReadFile("config.yaml")
+	ex, err := os.Executable()
+	conf, cerr := ioutil.ReadFile(filepath.Dir(ex) + "/config.yaml")
 	c := cfg{}
 
-	if err != nil {
+	if err != nil || cerr != nil {
 		fmt.Println("Could not find config.yaml!")
 		os.Exit(1)
 	}
