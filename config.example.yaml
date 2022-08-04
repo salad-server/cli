@@ -9,3 +9,10 @@ OSU_API: "https://osu.ppy.sh/p/api"
 PATH_REPLAYS: "/path/to/bancho.py/.data/osr"
 PATH_SCREENSHOT: "/path/to/bancho.py/.data/ss"
 PATH_AVATAR: "/path/to/bancho.py/.data/avatars"
+
+# Sessions
+TMUX_NAME: "salad"
+TMUX_SESSION:
+  - ["bpy", "/path/to/bancho.py", "./main.py"] # window name, start path, cmd
+  - ["proxy", "/path/to/proxy", "./proxy"]
+  - ["mini-api", "/path/to/lettuce-web/api", "./mini-api"]

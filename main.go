@@ -97,6 +97,49 @@ func main() {
 					return cmd.PersonalBest(id)
 				},
 			},
+
+			{
+				Name:  "process",
+				Usage: "Start/stop the salad",
+				Action: func(ctx *cli.Context) error {
+					if ctx.Bool("start") {
+						return cmd.CreateSession(!ctx.Bool("attach"))
+					} else if ctx.Bool("stop") {
+						return cmd.KillSessionSafe()
+					}
+
+					if ctx.Bool("restart") {
+						return cmd.RestartSession(!ctx.Bool("attach"))
+					}
+					
+					fmt.Println("Must be {start|stop|restart}")
+					return bad
+				},
+
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "start",
+						Usage: "Start the server",
+					},
+
+					&cli.BoolFlag{
+						Name:  "stop",
+						Usage: "Send CTRL+C and exit the session gracefully",
+					},
+
+					&cli.BoolFlag{
+						Name:    "restart",
+						Aliases: []string{"r"},
+						Usage:   "Restart the server",
+					},
+
+					&cli.BoolFlag{
+						Name:    "attach",
+						Aliases: []string{"a"},
+						Usage:   "Optional. When included, the CLI won't attach to session automatically",
+					},
+				},
+			},
 		},
 	}
 

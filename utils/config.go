@@ -10,9 +10,11 @@ import (
 )
 
 type cfg struct {
-	DSN     string `yaml:"DSN"`
-	API     string `yaml:"OSU_API"`
-	Data    struct {
+	DSN         string      `yaml:"DSN"`
+	API         string      `yaml:"OSU_API"`
+	SessionName string      `yaml:"TMUX_NAME"`
+	Sessions    [][3]string `yaml:"TMUX_SESSION"`
+	Data        struct {
 		Replays     string `yaml:"PATH_REPLAYS"`
 		Screenshots string `yaml:"PATH_SCREENSHOT"`
 		Avatars     string `yaml:"PATH_AVATAR"`
@@ -45,7 +47,7 @@ func loadLogger() *logrus.Logger {
 	logger.SetOutput(os.Stdout)
 	logger.SetLevel(logrus.TraceLevel)
 	logger.SetFormatter(&logrus.TextFormatter{
-		DisableTimestamp:       true,
+		DisableTimestamp: true,
 	})
 
 	return logger
